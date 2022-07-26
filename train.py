@@ -3,7 +3,7 @@ from pyclbr import Function
 from tkinter import N
 import numpy as np
 from stable_baselines3.common.env_checker import check_env
-from connect_four_dual import ConnectFour
+from connect_four_env import ConnectFour
 from stable_baselines3.dqn.policies import DQNPolicy
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import SubprocVecEnv
@@ -178,7 +178,7 @@ def main():
         "exploration_final_eps": 0.05,
         "exploration_fraction": 0.95,
         "n_cpus": 4,
-        "total_timesteps": 10 ** 4,  # 0.5e6,
+        "total_timesteps": 1.0e6,
         "learning_schedule": constant_schedule,
     }
 
@@ -189,6 +189,7 @@ def main():
     start_idx = 0
     last_model = None
     if continue_training:
+        # Find the last fully-complete epoch
         model_files = os.listdir(os.path.join(os.getcwd(), "./models"))
         model_prefixes = list(set([int(file.split("_")[0]) for file in model_files]))
         model_prefixes.sort(reverse=True)
@@ -213,7 +214,7 @@ def main():
         """
         Skip training step if:
         (1) continuing training and not fully complete, and
-        (2) on incomplete epoch
+        (2) on incomplete epoch, and
         (3) on completed mode
         """
         skip_epoch = (
@@ -237,22 +238,6 @@ def main():
             del model
             if mode == 1:
                 last_id = id
-
-    """
-    R = []
-    I = []
-    S = []
-    for i in np.arange(1000):
-        rewards, states, info = play_episode(
-            model=model,
-            env=ConnectFour(
-                n_rows=n_rows, n_cols=n_cols, move_first=True, opponent_model=None
-            ),
-        )
-        R.append(np.mean(rewards))
-        I.append(info["done_state"])
-        S.append(states)
-    """
 
 
 if __name__ == "__main__":
