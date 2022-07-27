@@ -165,7 +165,7 @@ class ConnectFour(Env):
             # Opponent makes first move
             self.drop_piece(col=col, player=self.opponent_piece)
 
-    def select_opponent_model(self, reset=False):
+    def select_opponent_model(self):
         if self.recent_models:
             if self.opponent_model:
                 del self.opponent_model
