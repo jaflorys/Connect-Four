@@ -21,7 +21,11 @@ from itertools import product
 
 
 def make_env(
-    n_rows: int, n_cols: int, move_first: bool, opponent_model: Union[DQN, None]
+    n_rows: int,
+    n_cols: int,
+    move_first: bool,
+    opponent_models: Union[None, list],
+    max_model_history: Union[None, int],
 ):
     """
     Utility function for multiprocessed env.
@@ -33,7 +37,9 @@ def make_env(
     """
 
     def _init():
-        env = ConnectFour(n_rows, n_cols, move_first, opponent_model)
+        env = ConnectFour(
+            n_rows, n_cols, move_first, opponent_models, max_model_history
+        )
         return env
 
     return _init
@@ -62,7 +68,8 @@ def self_play(*, settings: dict, id: str):
     n_cols = settings["n_cols"]
     move_first = settings["move_first"]
     self_model = settings["self_model"]
-    opponent_model = settings["opponent_model"]
+    opponent_models = settings["opponent_model"]
+    max_model_history = settings["max_model_history"]
     net_arch = settings["net_arch"]
     initial_learning_rate = settings["initial_learning_rate"]
     exploration_initial_eps = settings["exploration_initial_eps"]
@@ -76,21 +83,18 @@ def self_play(*, settings: dict, id: str):
         "net_arch": net_arch,
     }
 
-    # Create opponent model
-    if not opponent_model == None:
-        opponent_model = DQN.load(settings["opponent_model"])
-
     dummy_env = ConnectFour(
         n_rows=n_rows,
         n_cols=n_cols,
         move_first=move_first,
-        opponent_model=opponent_model,
+        opponent_models=opponent_models,
+        max_model_history=max_model_history,
     )
 
     check_env(
         env=dummy_env, warn=True,
     )
-
+    breakpoint()
     # Now create vectorized environments for training and evaluation
     train_env = SubprocVecEnv(
         [
@@ -98,7 +102,8 @@ def self_play(*, settings: dict, id: str):
                 n_rows=n_rows,
                 n_cols=n_cols,
                 move_first=True,
-                opponent_model=opponent_model,
+                opponent_models=opponent_models,
+                max_model_history=max_model_history,
             )
             for i in range(n_cpus)
         ]
@@ -110,7 +115,8 @@ def self_play(*, settings: dict, id: str):
                 n_rows=n_rows,
                 n_cols=n_cols,
                 move_first=True,
-                opponent_model=opponent_model,
+                opponent_models=opponent_models,
+                max_model_history=max_model_history,
             )
             for i in range(n_cpus)
         ]
@@ -160,8 +166,8 @@ def self_play(*, settings: dict, id: str):
     train_env.close()
     eval_env.close()
     dummy_env.close()
-    if not opponent_model == None:
-        del opponent_model
+    if not opponent_models == None:
+        del opponent_models
     return self_model
 
 
@@ -172,6 +178,7 @@ def main():
         "continue_training": False,
         "n_rows": 6,
         "n_cols": 7,
+        "max_model_history": 10,
         "net_arch": [1024, 1024],
         "initial_learning_rate": 1e-4,
         "exploration_initial_eps": 1.0,
@@ -209,6 +216,15 @@ def main():
     else:
         last_id = None
 
+    opponent_models = []
+    if continue_training:
+        opponent_models = [
+            os.path.join("./models", str(prefix) + "_1", "end_model")
+            for prefix in model_prefixes
+        ]
+        if not fully_complete:
+            opponent_models = opponent_models[1:]
+
     for run in runs:
         epoch, mode = run
         """
@@ -231,12 +247,14 @@ def main():
                 settings["self_model"] = None
                 settings["opponent_model"] = None
             else:
-                settings["self_model"] = os.path.join("./models", last_id, "end_model")
-                settings["opponent_model"] = settings["self_model"]
-            breakpoint()
+                self_model_path = os.path.join("./models", last_id, "end_model")
+                settings["self_model"] = self_model_path
+                settings["opponent_model"] = opponent_models
+
             model = self_play(settings=settings, id=id)
             del model
             if mode == 1:
+                opponent_models.append(os.path.join("./models", id, "end_model"))
                 last_id = id
 
 

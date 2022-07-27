@@ -15,12 +15,12 @@ class ConnectFour(Env):
         n_rows: int,
         n_cols: int,
         move_first: bool,
-        opponent_model: Union[None, DQN],
+        opponent_models: Union[None, DQN],
+        max_model_history: Union[None, int],
     ):
         self.n_rows = n_rows
         self.n_cols = n_cols
         self.move_first = move_first
-        self.opponent_model = opponent_model
         self.action_space = Discrete(self.n_cols)
         self.observation_space = MultiDiscrete(
             [3 for i in np.arange(self.n_rows * self.n_cols)]
@@ -33,6 +33,27 @@ class ConnectFour(Env):
         self.available_columns = set(np.arange(self.n_cols))
         self.piece = 1
         self.opponent_piece = 2
+
+        # Limit opponent models to max history length
+        self.recent_models = None
+        self.sample_weights = None
+        self.opponent_model = None
+        if opponent_models:
+            if max_model_history:
+                num_recent_models = int(min(len(opponent_models), max_model_history))
+                self.recent_models = opponent_models[:num_recent_models]
+            else:
+                self.recent_models = opponent_models
+
+            # Compute model sampling weights
+            sample_weights = [
+                num_recent_models - i for i in np.arange(num_recent_models)
+            ]
+            sample_weights = sample_weights / np.sum(sample_weights)
+            self.sample_weights = sample_weights
+
+        # Instantiate the opponent model
+        self.select_opponent_model()
 
         # Take initial opponent move (only occurs if 'self.move_first==False')
         self.initial_opponent_move()
@@ -47,9 +68,9 @@ class ConnectFour(Env):
         self.drop_piece(col=col, player=self.piece)
 
         # Determine whether player won game
-        playerWon = check_connect_four(state=self.state, player=self.piece)
+        selfWon = check_connect_four(state=self.state, player=self.piece)
 
-        if playerWon:
+        if selfWon:
             # Return win reward
             reward += 1
             done = True
@@ -64,7 +85,7 @@ class ConnectFour(Env):
         # If player has not won and board is not full, opponent moves
         if self.opponent_model == None:
             # Opponent picks random column
-            col = np.random.choice(list(self.available_columns), 1)[0]
+            col = np.random.choice(list(self.available_columns))
         else:
             # Interrogate model to find best move
             col, _ = self.opponent_model.predict(
@@ -72,7 +93,7 @@ class ConnectFour(Env):
             )
             # If column not valid, choose random column
             if not col in self.available_columns:
-                col = np.random.choice(list(self.available_columns), 1)[0]
+                col = np.random.choice(list(self.available_columns))
 
         self.drop_piece(col=col, player=self.opponent_piece)
 
@@ -98,6 +119,7 @@ class ConnectFour(Env):
     def reset(self):
         self.state = np.zeros((self.n_rows, self.n_cols))
         self.available_columns = set(np.arange(self.n_cols))
+        self.select_opponent_model()
         # Take initial opponent move (only occurs if 'self.move_first==False')
         self.initial_opponent_move()
 
@@ -133,7 +155,7 @@ class ConnectFour(Env):
         if not self.move_first:
             if self.opponent_model == None:
                 # Take random move
-                col = np.random.choice(list(self.available_columns), 1)[0]
+                col = np.random.choice(list(self.available_columns))
             else:
                 # Interrogate model to determine first move
                 # Note: All columns are available for first move
@@ -142,3 +164,12 @@ class ConnectFour(Env):
                 )
             # Opponent makes first move
             self.drop_piece(col=col, player=self.opponent_piece)
+
+    def select_opponent_model(self, reset=False):
+        if self.recent_models:
+            if self.opponent_model:
+                del self.opponent_model
+            load_model_path = np.random.choice(
+                self.recent_models, p=self.sample_weights
+            )
+            self.opponent_model = DQN.load(load_model_path)
