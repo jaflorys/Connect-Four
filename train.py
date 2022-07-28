@@ -94,7 +94,7 @@ def self_play(*, settings: dict, id: str):
     check_env(
         env=dummy_env, warn=True,
     )
-    breakpoint()
+
     # Now create vectorized environments for training and evaluation
     train_env = SubprocVecEnv(
         [
@@ -185,7 +185,7 @@ def main():
         "exploration_final_eps": 0.05,
         "exploration_fraction": 0.95,
         "n_cpus": 4,
-        "total_timesteps": 1.0e6,
+        "total_timesteps": 2.0e6,
         "learning_schedule": constant_schedule,
     }
 
