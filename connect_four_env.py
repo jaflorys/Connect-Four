@@ -16,9 +16,13 @@ class ConnectFour(Env):
         n_cols: int,
         opponent_models: Union[None, DQN],
         max_model_history: Union[None, int],
+        probability_switch_model: float,
+        id: int,
     ):
         self.n_rows = n_rows
         self.n_cols = n_cols
+        self.probability_switch_model = probability_switch_model
+        self.id = id
         self.move_first = bool(random.randint(0, 1))
         self.action_space = Discrete(self.n_cols)
         self.observation_space = MultiDiscrete(
@@ -37,13 +41,14 @@ class ConnectFour(Env):
         self.recent_models = None
         self.sample_weights = None
         self.opponent_model = None
+        self.num_recent_models = None
         if opponent_models:
             if max_model_history:
                 num_recent_models = int(min(len(opponent_models), max_model_history))
                 self.recent_models = opponent_models[:num_recent_models]
             else:
                 self.recent_models = opponent_models
-
+            self.num_recent_models = len(self.recent_models)
             # Compute model sampling weights
             sample_weights = [
                 num_recent_models - i for i in np.arange(num_recent_models)
@@ -118,7 +123,8 @@ class ConnectFour(Env):
     def reset(self):
         self.state = np.zeros((self.n_rows, self.n_cols))
         self.available_columns = set(np.arange(self.n_cols))
-        # self.select_opponent_model()
+        if random.random() < self.probability_switch_model:
+            self.select_opponent_model()
         self.move_first = bool(random.randint(0, 1))
         # Take initial opponent move (only occurs if 'self.move_first==False')
         self.initial_opponent_move()
@@ -167,9 +173,11 @@ class ConnectFour(Env):
 
     def select_opponent_model(self):
         if self.recent_models:
-            if self.opponent_model:
-                del self.opponent_model
-            load_model_path = np.random.choice(
-                self.recent_models, p=self.sample_weights
-            )
-            self.opponent_model = DQN.load(load_model_path)
+            if self.num_recent_models > 1:
+                if self.opponent_model:
+                    del self.opponent_model
+                load_model_path = np.random.choice(
+                    self.recent_models, p=self.sample_weights
+                )
+                load_model_path + "_" + str(id)
+                self.opponent_model = DQN.load(load_model_path)

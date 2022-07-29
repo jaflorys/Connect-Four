@@ -1,14 +1,9 @@
-from gc import callbacks
-from pyclbr import Function
-from tkinter import N
 import numpy as np
+import shutil
 from stable_baselines3.common.env_checker import check_env
 from connect_four_env import ConnectFour
-from stable_baselines3.dqn.policies import DQNPolicy
-from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3 import DQN
-from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import EvalCallback
 
 from copy import deepcopy
@@ -17,7 +12,6 @@ from typing import Union
 from gym import Env
 
 from learning_schedules import constant_schedule, linear_schedule
-from itertools import product
 
 
 def make_env(
@@ -25,6 +19,8 @@ def make_env(
     n_cols: int,
     opponent_models: Union[None, list],
     max_model_history: Union[None, int],
+    probability_switch_model: float,
+    id: int,
 ):
     """
     Utility function for multiprocessed env.
@@ -36,7 +32,14 @@ def make_env(
     """
 
     def _init():
-        env = ConnectFour(n_rows, n_cols, opponent_models, max_model_history)
+        env = ConnectFour(
+            n_rows,
+            n_cols,
+            opponent_models,
+            max_model_history,
+            probability_switch_model=probability_switch_model,
+            id=id,
+        )
         return env
 
     return _init
@@ -66,6 +69,7 @@ def self_play(*, settings: dict, id: str):
     self_model = settings["self_model"]
     opponent_models = settings["opponent_model"]
     max_model_history = settings["max_model_history"]
+    probability_switch_model = settings["probability_switch_model"]
     net_arch = settings["net_arch"]
     initial_learning_rate = settings["initial_learning_rate"]
     exploration_initial_eps = settings["exploration_initial_eps"]
@@ -84,6 +88,8 @@ def self_play(*, settings: dict, id: str):
         n_cols=n_cols,
         opponent_models=opponent_models,
         max_model_history=max_model_history,
+        probability_switch_model=1,
+        id=-1,
     )
 
     check_env(
@@ -98,6 +104,8 @@ def self_play(*, settings: dict, id: str):
                 n_cols=n_cols,
                 opponent_models=opponent_models,
                 max_model_history=max_model_history,
+                probability_switch_model=probability_switch_model,
+                id=i,
             )
             for i in range(n_cpus)
         ]
@@ -110,6 +118,8 @@ def self_play(*, settings: dict, id: str):
                 n_cols=n_cols,
                 opponent_models=opponent_models,
                 max_model_history=max_model_history,
+                probability_switch_model=probability_switch_model,
+                id=i,
             )
             for i in range(n_cpus)
         ]
@@ -168,17 +178,18 @@ def main():
 
     settings = {
         "num_training_sets": 3,
-        "continue_training": True,
+        "continue_training": False,
         "n_rows": 6,
         "n_cols": 7,
         "max_model_history": 10,
+        "probability_switch_model": 0.5,
         "net_arch": [1024, 1024],
         "initial_learning_rate": 1e-4,
         "exploration_initial_eps": 1.0,
         "exploration_final_eps": 0.05,
         "exploration_fraction": 0.95,
         "n_cpus": 4,
-        "total_timesteps": 2.0e6,
+        "total_timesteps": 1.0e6,
         "learning_schedule": constant_schedule,
     }
 
@@ -188,6 +199,7 @@ def main():
     # If continue training find last epoch completed
     start_idx = 0
     last_model = None
+    num_cpus = settings["n_cpus"]
     if continue_training:
         # Find the last fully-complete epoch
         model_files = os.listdir(os.path.join(os.getcwd(), "./models"))
@@ -195,6 +207,18 @@ def main():
         model_prefixes.sort(reverse=True)
         last_model = model_prefixes[0]
         start_idx = last_model + 1
+
+        # Copy model files for each cpu to avoid collisions
+        for model_file in model_files:
+            for i in np.arange(num_cpus):
+                model_file_orig = os.path.join(
+                    os.getcwd(), "./models", model_file, "end_model.zip"
+                )
+                model_file_cpu = os.path.join(
+                    os.getcwd(), "./models", model_file, "end_model_" + str(i) + ".zip"
+                )
+                if not os.path.exists(model_file_cpu):
+                    shutil.copy(model_file_orig, model_file_cpu)
 
     # Get set of all runs to be done
     epochs = np.arange(start_idx, start_idx + num_training_sets)
@@ -227,6 +251,14 @@ def main():
 
         opponent_models.append(os.path.join("./models", id, "end_model"))
         last_id = id
+
+        # Copy model file for use be each environment
+        model_file_orig = os.path.join(os.getcwd(), "./models", id, "end_model.zip")
+        for i in np.arange(num_cpus):
+            model_file_cpu = os.path.join(
+                os.getcwd(), "./models", id, "end_model_" + str(i) + ".zip"
+            )
+            shutil.copyfile(model_file_orig, model_file_cpu)
 
 
 if __name__ == "__main__":
