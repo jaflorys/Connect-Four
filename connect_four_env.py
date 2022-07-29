@@ -14,13 +14,12 @@ class ConnectFour(Env):
         self,
         n_rows: int,
         n_cols: int,
-        move_first: bool,
         opponent_models: Union[None, DQN],
         max_model_history: Union[None, int],
     ):
         self.n_rows = n_rows
         self.n_cols = n_cols
-        self.move_first = move_first
+        self.move_first = bool(random.randint(0, 1))
         self.action_space = Discrete(self.n_cols)
         self.observation_space = MultiDiscrete(
             [3 for i in np.arange(self.n_rows * self.n_cols)]
@@ -119,7 +118,8 @@ class ConnectFour(Env):
     def reset(self):
         self.state = np.zeros((self.n_rows, self.n_cols))
         self.available_columns = set(np.arange(self.n_cols))
-        self.select_opponent_model()
+        # self.select_opponent_model()
+        self.move_first = bool(random.randint(0, 1))
         # Take initial opponent move (only occurs if 'self.move_first==False')
         self.initial_opponent_move()
 

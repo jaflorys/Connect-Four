@@ -16,14 +16,13 @@ import os
 from typing import Union
 from gym import Env
 
-from learning_schedules import constant_schedule
+from learning_schedules import constant_schedule, linear_schedule
 from itertools import product
 
 
 def make_env(
     n_rows: int,
     n_cols: int,
-    move_first: bool,
     opponent_models: Union[None, list],
     max_model_history: Union[None, int],
 ):
@@ -37,9 +36,7 @@ def make_env(
     """
 
     def _init():
-        env = ConnectFour(
-            n_rows, n_cols, move_first, opponent_models, max_model_history
-        )
+        env = ConnectFour(n_rows, n_cols, opponent_models, max_model_history)
         return env
 
     return _init
@@ -66,7 +63,6 @@ def self_play(*, settings: dict, id: str):
     # Unpack settings
     n_rows = settings["n_rows"]
     n_cols = settings["n_cols"]
-    move_first = settings["move_first"]
     self_model = settings["self_model"]
     opponent_models = settings["opponent_model"]
     max_model_history = settings["max_model_history"]
@@ -77,7 +73,7 @@ def self_play(*, settings: dict, id: str):
     exploration_fraction = settings["exploration_fraction"]
     n_cpus = settings["n_cpus"]
     total_timesteps = settings["total_timesteps"]
-    learning_schedule = constant_schedule(learning_rate=initial_learning_rate)
+    learning_schedule = linear_schedule(initial_learning_rate=initial_learning_rate)
 
     policy_kwargs = {
         "net_arch": net_arch,
@@ -86,7 +82,6 @@ def self_play(*, settings: dict, id: str):
     dummy_env = ConnectFour(
         n_rows=n_rows,
         n_cols=n_cols,
-        move_first=move_first,
         opponent_models=opponent_models,
         max_model_history=max_model_history,
     )
@@ -101,7 +96,6 @@ def self_play(*, settings: dict, id: str):
             make_env(
                 n_rows=n_rows,
                 n_cols=n_cols,
-                move_first=True,
                 opponent_models=opponent_models,
                 max_model_history=max_model_history,
             )
@@ -114,7 +108,6 @@ def self_play(*, settings: dict, id: str):
             make_env(
                 n_rows=n_rows,
                 n_cols=n_cols,
-                move_first=True,
                 opponent_models=opponent_models,
                 max_model_history=max_model_history,
             )
@@ -175,7 +168,7 @@ def main():
 
     settings = {
         "num_training_sets": 3,
-        "continue_training": False,
+        "continue_training": True,
         "n_rows": 6,
         "n_cols": 7,
         "max_model_history": 10,
@@ -198,64 +191,42 @@ def main():
     if continue_training:
         # Find the last fully-complete epoch
         model_files = os.listdir(os.path.join(os.getcwd(), "./models"))
-        model_prefixes = list(set([int(file.split("_")[0]) for file in model_files]))
+        model_prefixes = [int(file) for file in model_files]
         model_prefixes.sort(reverse=True)
         last_model = model_prefixes[0]
-        fully_complete = True if str(last_model) + "_" + "1" in model_files else False
-        start_idx = last_model + 1 if fully_complete else last_model
+        start_idx = last_model + 1
 
     # Get set of all runs to be done
-    epochs = np.arange(start_idx, start_idx + num_training_sets + 1)
-    modes = np.arange(2)
-    runs = product(epochs, modes)
+    epochs = np.arange(start_idx, start_idx + num_training_sets)
 
-    if continue_training and fully_complete:
-        last_id = str(last_model) + "_1"
-    elif continue_training and not fully_complete:
-        last_id = str(last_model - 1) + "_1"
+    if continue_training:
+        last_id = str(last_model)
     else:
         last_id = None
 
     opponent_models = []
     if continue_training:
         opponent_models = [
-            os.path.join("./models", str(prefix) + "_1", "end_model")
+            os.path.join("./models", str(prefix), "end_model")
             for prefix in model_prefixes
         ]
-        if not fully_complete:
-            opponent_models = opponent_models[1:]
 
-    for run in runs:
-        epoch, mode = run
-        """
-        Skip training step if:
-        (1) continuing training and not fully complete, and
-        (2) on incomplete epoch, and
-        (3) on completed mode
-        """
-        skip_epoch = (
-            (continue_training)
-            and (not fully_complete)
-            and (epoch == start_idx)
-            and (mode == 0)
-        )
-        if not skip_epoch:
-            id = str(epoch) + "_" + str(mode)
-            settings["move_first"] = True if mode == 0 else False
+    for epoch in epochs:
+        id = str(epoch)
 
-            if epoch == 0:
-                settings["self_model"] = None
-                settings["opponent_model"] = None
-            else:
-                self_model_path = os.path.join("./models", last_id, "end_model")
-                settings["self_model"] = self_model_path
-                settings["opponent_model"] = opponent_models
+        if epoch == 0:
+            settings["self_model"] = None
+            settings["opponent_model"] = None
+        else:
+            self_model_path = os.path.join("./models", last_id, "end_model")
+            settings["self_model"] = self_model_path
+            settings["opponent_model"] = opponent_models
 
-            model = self_play(settings=settings, id=id)
-            del model
-            if mode == 1:
-                opponent_models.append(os.path.join("./models", id, "end_model"))
-                last_id = id
+        model = self_play(settings=settings, id=id)
+        del model
+
+        opponent_models.append(os.path.join("./models", id, "end_model"))
+        last_id = id
 
 
 if __name__ == "__main__":
