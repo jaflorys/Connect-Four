@@ -41,6 +41,7 @@ class ConnectFour(Env):
         self.recent_models = None
         self.sample_weights = None
         self.opponent_model = None
+
         self.num_recent_models = None
         if opponent_models:
             if max_model_history:
@@ -181,3 +182,11 @@ class ConnectFour(Env):
                 )
                 load_model_path + "_" + str(id)
                 self.opponent_model = DQN.load(load_model_path)
+            else:
+                # Only load model once
+                if not self.opponent_model:
+                    load_model_path = np.random.choice(
+                        self.recent_models, p=self.sample_weights
+                    )
+                    load_model_path + "_" + str(id)
+                    self.opponent_model = DQN.load(load_model_path)

@@ -75,7 +75,8 @@ def self_play(*, settings: dict, id: str):
     exploration_initial_eps = settings["exploration_initial_eps"]
     exploration_final_eps = settings["exploration_final_eps"]
     exploration_fraction = settings["exploration_fraction"]
-    n_cpus = settings["n_cpus"]
+    num_cpus_train = settings["num_cpus_train"]
+    num_cpus_eval = settings["num_cpus_eval"]
     total_timesteps = settings["total_timesteps"]
     learning_schedule = linear_schedule(initial_learning_rate=initial_learning_rate)
 
@@ -107,7 +108,7 @@ def self_play(*, settings: dict, id: str):
                 probability_switch_model=probability_switch_model,
                 id=i,
             )
-            for i in range(n_cpus)
+            for i in range(num_cpus_train)
         ]
     )
 
@@ -121,9 +122,27 @@ def self_play(*, settings: dict, id: str):
                 probability_switch_model=probability_switch_model,
                 id=i,
             )
-            for i in range(n_cpus)
+            for i in range(num_cpus_eval)
         ]
     )
+
+    """train_env = ConnectFour(
+        n_rows=n_rows,
+        n_cols=n_cols,
+        opponent_models=opponent_models,
+        max_model_history=max_model_history,
+        probability_switch_model=1,
+        id=1,
+    )
+
+    eval_env = ConnectFour(
+        n_rows=n_rows,
+        n_cols=n_cols,
+        opponent_models=opponent_models,
+        max_model_history=max_model_history,
+        probability_switch_model=1,
+        id=2,
+    )"""
 
     # Create self model if it is 'None'
     if self_model == None:
@@ -161,6 +180,7 @@ def self_play(*, settings: dict, id: str):
         deterministic=True,
         render=False,
     )
+
     self_model.learn(
         total_timesteps=total_timesteps, log_interval=4, callback=eval_callback
     )
@@ -177,20 +197,20 @@ def self_play(*, settings: dict, id: str):
 def main():
 
     settings = {
-        "num_training_sets": 3,
+        "num_training_sets": 5,
         "continue_training": False,
         "n_rows": 6,
         "n_cols": 7,
         "max_model_history": 10,
-        "probability_switch_model": 0.5,
+        "probability_switch_model": 1.0,
         "net_arch": [1024, 1024],
         "initial_learning_rate": 1e-4,
         "exploration_initial_eps": 1.0,
         "exploration_final_eps": 0.05,
         "exploration_fraction": 0.95,
-        "n_cpus": 4,
-        "total_timesteps": 1.0e6,
-        "learning_schedule": constant_schedule,
+        "num_cpus_train": 3,
+        "num_cpus_eval": 1,
+        "total_timesteps": 2.0e6,
     }
 
     continue_training = settings["continue_training"]
@@ -199,7 +219,7 @@ def main():
     # If continue training find last epoch completed
     start_idx = 0
     last_model = None
-    num_cpus = settings["n_cpus"]
+    num_cpus = settings["num_cpus_train"]
     if continue_training:
         # Find the last fully-complete epoch
         model_files = os.listdir(os.path.join(os.getcwd(), "./models"))
