@@ -17,6 +17,7 @@ from learning_schedules import constant_schedule, linear_schedule
 def make_env(
     n_rows: int,
     n_cols: int,
+    move_first: Union[None, bool],
     opponent_models: Union[None, list],
     max_model_history: Union[None, int],
     probability_switch_model: float,
@@ -35,6 +36,7 @@ def make_env(
         env = ConnectFour(
             n_rows,
             n_cols,
+            move_first,
             opponent_models,
             max_model_history,
             probability_switch_model=probability_switch_model,
@@ -87,6 +89,7 @@ def self_play(*, settings: dict, id: str):
     dummy_env = ConnectFour(
         n_rows=n_rows,
         n_cols=n_cols,
+        move_first=None,
         opponent_models=opponent_models,
         max_model_history=max_model_history,
         probability_switch_model=1,
@@ -103,6 +106,7 @@ def self_play(*, settings: dict, id: str):
             make_env(
                 n_rows=n_rows,
                 n_cols=n_cols,
+                move_first=None,
                 opponent_models=opponent_models,
                 max_model_history=max_model_history,
                 probability_switch_model=probability_switch_model,
@@ -117,6 +121,7 @@ def self_play(*, settings: dict, id: str):
             make_env(
                 n_rows=n_rows,
                 n_cols=n_cols,
+                move_first=None,
                 opponent_models=opponent_models,
                 max_model_history=max_model_history,
                 probability_switch_model=probability_switch_model,
@@ -272,7 +277,7 @@ def main():
         opponent_models.append(os.path.join("./models", id, "end_model"))
         last_id = id
 
-        # Copy model file for use be each environment
+        # Copy model file for use by each environment
         model_file_orig = os.path.join(os.getcwd(), "./models", id, "end_model.zip")
         for i in np.arange(num_cpus):
             model_file_cpu = os.path.join(
