@@ -1,24 +1,24 @@
+import copy
 import gc
+import os
+import learning_schedules
 import numpy as np
 import shutil
-from stable_baselines3.common.env_checker import check_env
+
 from connect_four_env import ConnectFour
-from stable_baselines3.common.vec_env import SubprocVecEnv
+from gym import Env
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EvalCallback
-
-from copy import deepcopy
-import os
+from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.vec_env import SubprocVecEnv
 from typing import Union
-from gym import Env
-
-from learning_schedules import constant_schedule, linear_schedule
 
 
 def make_env(
     n_rows: int,
     n_cols: int,
     move_first: Union[None, bool],
+    deterministic_opponent: bool,
     opponent_models: Union[None, list],
     max_model_history: Union[None, int],
     probability_switch_model: float,
@@ -38,6 +38,7 @@ def make_env(
             n_rows,
             n_cols,
             move_first,
+            deterministic_opponent,
             opponent_models,
             max_model_history,
             probability_switch_model=probability_switch_model,
@@ -52,19 +53,40 @@ def play_episode(model: DQN, env: Env):
     states = []
     rewards = []
     state = env.reset()
-    states.append(deepcopy(env.state))
+    states.append(copy.deepcopy(env.state))
 
     done = False
     while not done:
         action, _ = model.predict(state, deterministic=True)
         state, reward, done, info = env.step(action)
-        states.append(deepcopy(env.state))
+        states.append(copy.deepcopy(env.state))
         rewards.append(reward)
 
     return rewards, states, info
 
 
 def self_play(*, settings: dict, id: str):
+
+    """Trains an DQN policy against randomly selected past policies.
+
+    Trains an agent using deep-Q learning (DQN) against randomly selected
+    policies. Vectorized training and evaluation environments are created
+    and have file paths to randomly load existing policies as opponents
+    against the policy being trained. The function returns the trained
+    policy. 
+
+
+    Args:
+        settings: An dictionary of training settings.
+        id: A integer that identifies the current policy
+        being trained. Lower integers indicated older policies.
+
+    Returns:
+        A trained DQN model.
+
+    Raises:
+        IOError: An error occurred accessing the smalltable.
+    """
 
     # Unpack settings
     n_rows = settings["n_rows"]
@@ -81,7 +103,9 @@ def self_play(*, settings: dict, id: str):
     num_cpus_train = settings["num_cpus_train"]
     num_cpus_eval = settings["num_cpus_eval"]
     total_timesteps = settings["total_timesteps"]
-    learning_schedule = linear_schedule(initial_learning_rate=initial_learning_rate)
+    learning_schedule = learning_schedules.linear_schedule(
+        initial_learning_rate=initial_learning_rate
+    )
 
     policy_kwargs = {
         "net_arch": net_arch,
@@ -91,6 +115,7 @@ def self_play(*, settings: dict, id: str):
         n_rows=n_rows,
         n_cols=n_cols,
         move_first=None,
+        deterministic_opponent=True,
         opponent_models=opponent_models,
         max_model_history=max_model_history,
         probability_switch_model=1,
@@ -108,6 +133,7 @@ def self_play(*, settings: dict, id: str):
                 n_rows=n_rows,
                 n_cols=n_cols,
                 move_first=None,
+                deterministic_opponent=True,
                 opponent_models=opponent_models,
                 max_model_history=max_model_history,
                 probability_switch_model=probability_switch_model,
@@ -123,6 +149,7 @@ def self_play(*, settings: dict, id: str):
                 n_rows=n_rows,
                 n_cols=n_cols,
                 move_first=None,
+                deterministic_opponent=True,
                 opponent_models=opponent_models,
                 max_model_history=max_model_history,
                 probability_switch_model=probability_switch_model,
@@ -195,8 +222,6 @@ def self_play(*, settings: dict, id: str):
     train_env.close()
     eval_env.close()
     dummy_env.close()
-    if not opponent_models == None:
-        del opponent_models
     return self_model
 
 
@@ -286,7 +311,7 @@ def main():
             )
             shutil.copyfile(model_file_orig, model_file_cpu)
 
-    gc.collect()
+        gc.collect()
 
 
 if __name__ == "__main__":

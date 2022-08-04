@@ -58,7 +58,11 @@ def main(*, settings: dict):
     total_matches = np.zeros((num_policies, num_policies))
 
     for i in np.arange(total_random_matches):
-        print("Match " + str(i + 1), end="\r", flush=True)
+        print(
+            "Match " + str(i + 1) + " of " + str(total_random_matches),
+            end="\r",
+            flush=True,
+        )
         # Randomly select two policies
         idx_1, idx_2 = np.random.choice(policy_idxs, 2, replace=False)
         policy_path_1, policy_path_2 = (
@@ -100,8 +104,8 @@ if __name__ == "__main__":
     settings = {
         "total_random_matches": 1000,
         "games_per_match": 1,
-        "deterministic_player": True,
-        "deterministic_opponent": True,
+        "deterministic_player": False,
+        "deterministic_opponent": False,
     }
     main(settings=settings)
 

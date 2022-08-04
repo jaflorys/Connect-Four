@@ -1,10 +1,32 @@
+"""Utilities used for training Connect-Four.
+
+This module contains utility functions that are used to train and evaluate
+policies for Connect-Four agents
+
+"""
+
 import numpy as np
 
 
 def check_connect_four(state: np.ndarray, player: int):
+    """Determines whether a player has won a Connect Four game.
+
+    Uses convolutional filters find a match of four sequential
+    player pieces in a horizontal, vertical or diagonal arrangement.
+
+    Args:
+        state: An array that defines the current state of the Connect Four game
+        player: An integer ('1' or '2') that represents the player for which
+        a connect four match is determined.
+
+    Returns:
+        A boolean value, where 'True' indicates that the player has a
+        connect four match (thereby winning the game).
+
+    """
     n_rows, n_cols = state.shape
 
-    # Check whether either player won
+    # Create match pattern of four sequential player pieces
     match_pattern = np.asarray([1 for i in np.arange(4)])
     match_value = np.sum(match_pattern)
     match_state = (state == player).astype(int)
