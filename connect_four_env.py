@@ -1,8 +1,11 @@
+import numpy as np
+import random
+
+from copy import deepcopy
 from tabnanny import check
 from gym import Env
 from gym.spaces import Discrete, MultiDiscrete
-import numpy as np
-import random
+
 from typing import Union
 
 from utils import check_connect_four
@@ -15,6 +18,7 @@ class ConnectFour(Env):
         n_rows: int,
         n_cols: int,
         move_first: Union[None, bool],
+        deterministic_opponent: bool,
         opponent_models: Union[None, DQN],
         max_model_history: Union[None, int],
         probability_switch_model: float,
@@ -22,6 +26,7 @@ class ConnectFour(Env):
     ):
         self.n_rows = n_rows
         self.n_cols = n_cols
+        self.deterministic_opponent = deterministic_opponent
         self.probability_switch_model = probability_switch_model
         self.id = id
         if move_first == None:
@@ -34,7 +39,7 @@ class ConnectFour(Env):
         )
         # States:
         # 0: Empty place
-        # 1: Player piece
+        # 1: Self piece
         # 2: Opponent piece
         self.state = np.zeros((self.n_rows, self.n_cols))
         self.available_columns = set(np.arange(self.n_cols))
@@ -61,6 +66,9 @@ class ConnectFour(Env):
             ]
             sample_weights = sample_weights / np.sum(sample_weights)
             self.sample_weights = sample_weights
+
+        self.history = []
+        self.state_history = []
 
         # Instantiate the opponent model
         self.select_opponent_model()
@@ -98,8 +106,10 @@ class ConnectFour(Env):
             col = np.random.choice(list(self.available_columns))
         else:
             # Interrogate model to find best move
-            col, _ = self.opponent_model.predict(
-                self.state.flatten(), deterministic=True
+            col = int(
+                self.opponent_model.predict(
+                    self.state.flatten(), deterministic=self.deterministic_opponent
+                )[0]
             )
             # If column not valid, choose random column
             if not col in self.available_columns:
@@ -133,6 +143,10 @@ class ConnectFour(Env):
             self.select_opponent_model()
         self.move_first = bool(random.randint(0, 1))
         # Take initial opponent move (only occurs if 'self.move_first==False')
+
+        self.history = []
+        self.state_history = []
+
         self.initial_opponent_move()
 
         return self.state.flatten()
@@ -142,6 +156,10 @@ class ConnectFour(Env):
 
     def drop_piece(self, *, col: int, player: int):
         # Determine which positions in column are filled
+        if player == self.piece:
+            self.history.append(("player", col))
+        else:
+            self.history.append(("opponent", col))
         filled_positions = np.abs(self.state[:, col])
         row = -1
         if np.sum(filled_positions) == 0:
@@ -158,6 +176,8 @@ class ConnectFour(Env):
             )
             self.state[row, col] = player
 
+        self.state_history.append(deepcopy(self.state))
+
         if row == 0:
             # If column full, remove from set of available columns
             self.available_columns.remove(col)
@@ -171,9 +191,12 @@ class ConnectFour(Env):
             else:
                 # Interrogate model to determine first move
                 # Note: All columns are available for first move
-                col, _ = self.opponent_model.predict(
-                    self.state.flatten(), deterministic=True
+                col = int(
+                    self.opponent_model.predict(
+                        self.state.flatten(), deterministic=self.deterministic_opponent
+                    )[0]
                 )
+
             # Opponent makes first move
             self.drop_piece(col=col, player=self.opponent_piece)
 
@@ -185,7 +208,6 @@ class ConnectFour(Env):
                 load_model_path = np.random.choice(
                     self.recent_models, p=self.sample_weights
                 )
-                load_model_path + "_" + str(id)
                 self.opponent_model = DQN.load(load_model_path)
             else:
                 # Only load model once
@@ -193,5 +215,4 @@ class ConnectFour(Env):
                     load_model_path = np.random.choice(
                         self.recent_models, p=self.sample_weights
                     )
-                    load_model_path + "_" + str(id)
                     self.opponent_model = DQN.load(load_model_path)

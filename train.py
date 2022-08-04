@@ -1,3 +1,4 @@
+import gc
 import numpy as np
 import shutil
 from stable_baselines3.common.env_checker import check_env
@@ -202,8 +203,8 @@ def self_play(*, settings: dict, id: str):
 def main():
 
     settings = {
-        "num_training_sets": 5,
-        "continue_training": False,
+        "num_training_sets": 2,
+        "continue_training": True,
         "n_rows": 6,
         "n_cols": 7,
         "max_model_history": 10,
@@ -284,6 +285,8 @@ def main():
                 os.getcwd(), "./models", id, "end_model_" + str(i) + ".zip"
             )
             shutil.copyfile(model_file_orig, model_file_cpu)
+
+    gc.collect()
 
 
 if __name__ == "__main__":
