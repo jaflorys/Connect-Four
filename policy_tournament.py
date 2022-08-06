@@ -1,34 +1,11 @@
 import gc
-import itertools
 import os
-from matplotlib.pyplot import hist
 import numpy as np
 
 
 from connect_four_env import ConnectFour
-from gym import Env
 from stable_baselines3.dqn.dqn import DQN
-
-
-def play_matches(
-    *, player_policy: DQN, deterministic_player: bool, env: Env, num_games: int
-):
-    num_wins = np.zeros(2)
-    for _ in np.arange(num_games):
-        state = env.reset()
-        done = False
-        while not done:
-            move = int(
-                player_policy.predict(state, deterministic=deterministic_player)[0]
-            )
-            state, _, done, info = env.step(move)
-        done_state = info["done_state"]
-        if done_state == 1:
-            num_wins[0] += 1
-        if done_state == -1:
-            num_wins[1] += 1
-
-    return num_wins
+from utils import play_matches
 
 
 def main(*, settings: dict):
@@ -102,10 +79,10 @@ def main(*, settings: dict):
 
 if __name__ == "__main__":
     settings = {
-        "total_random_matches": 1000,
+        "total_random_matches": 2000,
         "games_per_match": 1,
-        "deterministic_player": False,
-        "deterministic_opponent": False,
+        "deterministic_player": True,
+        "deterministic_opponent": True,
     }
     main(settings=settings)
 

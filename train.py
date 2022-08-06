@@ -239,7 +239,7 @@ def main():
         "exploration_initial_eps": 1.0,
         "exploration_final_eps": 0.05,
         "exploration_fraction": 0.95,
-        "num_cpus_train": 3,
+        "num_cpus_train": 2,
         "num_cpus_eval": 1,
         "total_timesteps": 2.0e6,
     }

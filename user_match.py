@@ -63,6 +63,7 @@ def main():
         n_rows=6,
         n_cols=7,
         move_first=move_first,
+        deterministic_opponent=True,
         opponent_models=[model_file_path],
         max_model_history=None,
         probability_switch_model=0,
@@ -77,7 +78,7 @@ def main():
     done_state = info["done_state"]
     if done_state == 1:
         print("YOU WIN!!!")
-    elif done_state == 0:
+    elif done_state == -1:
         print("YOU LOSE!!!")
     else:
         print("TIE GAME!!!")

@@ -6,6 +6,8 @@ policies for Connect-Four agents
 """
 
 import numpy as np
+from gym import Env
+from stable_baselines3.dqn.dqn import DQN
 
 
 def check_connect_four(state: np.ndarray, player: int):
@@ -53,3 +55,24 @@ def check_connect_four(state: np.ndarray, player: int):
             return True
 
     return False
+
+
+def play_matches(
+    *, player_policy: DQN, deterministic_player: bool, env: Env, num_games: int
+):
+    num_wins = np.zeros(2)
+    for _ in np.arange(num_games):
+        state = env.reset()
+        done = False
+        while not done:
+            move = int(
+                player_policy.predict(state, deterministic=deterministic_player)[0]
+            )
+            state, _, done, info = env.step(move)
+        done_state = info["done_state"]
+        if done_state == 1:
+            num_wins[0] += 1
+        if done_state == -1:
+            num_wins[1] += 1
+
+    return num_wins
