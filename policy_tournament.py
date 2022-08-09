@@ -55,6 +55,7 @@ def main(*, settings: dict):
             deterministic_opponent=deterministic_opponent,
             max_model_history=None,
             probability_switch_model=0,
+            switch_method=None,
             id=1,
         )
 

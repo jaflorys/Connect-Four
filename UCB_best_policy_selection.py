@@ -64,6 +64,7 @@ def main(*, settings):
             deterministic_opponent=True,
             max_model_history=None,
             probability_switch_model=0,
+            switch_method=None,
             id=1,
         )
 

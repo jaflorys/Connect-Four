@@ -22,6 +22,7 @@ def make_env(
     opponent_models: Union[None, list],
     max_model_history: Union[None, int],
     probability_switch_model: float,
+    switch_method: Union[None, str],
     id: int,
 ):
     """
@@ -42,6 +43,7 @@ def make_env(
             opponent_models,
             max_model_history,
             probability_switch_model=probability_switch_model,
+            switch_method=switch_method,
             id=id,
         )
         return env
@@ -95,6 +97,7 @@ def self_play(*, settings: dict, id: str):
     opponent_models = settings["opponent_model"]
     max_model_history = settings["max_model_history"]
     probability_switch_model = settings["probability_switch_model"]
+    switch_method = settings["switch_method"]
     net_arch = settings["net_arch"]
     initial_learning_rate = settings["initial_learning_rate"]
     exploration_initial_eps = settings["exploration_initial_eps"]
@@ -119,6 +122,7 @@ def self_play(*, settings: dict, id: str):
         opponent_models=opponent_models,
         max_model_history=max_model_history,
         probability_switch_model=1,
+        switch_method=switch_method,
         id=-1,
     )
 
@@ -137,6 +141,7 @@ def self_play(*, settings: dict, id: str):
                 opponent_models=opponent_models,
                 max_model_history=max_model_history,
                 probability_switch_model=probability_switch_model,
+                switch_method=switch_method,
                 id=i,
             )
             for i in range(num_cpus_train)
@@ -153,6 +158,7 @@ def self_play(*, settings: dict, id: str):
                 opponent_models=opponent_models,
                 max_model_history=max_model_history,
                 probability_switch_model=probability_switch_model,
+                switch_method=switch_method,
                 id=i,
             )
             for i in range(num_cpus_eval)
@@ -162,19 +168,25 @@ def self_play(*, settings: dict, id: str):
     """train_env = ConnectFour(
         n_rows=n_rows,
         n_cols=n_cols,
+        move_first=None,
+        deterministic_opponent=True,
         opponent_models=opponent_models,
         max_model_history=max_model_history,
-        probability_switch_model=1,
+        probability_switch_model=probability_switch_model,
+        switch_method=switch_method,
         id=1,
     )
 
     eval_env = ConnectFour(
         n_rows=n_rows,
         n_cols=n_cols,
+        move_first=None,
+        deterministic_opponent=True,
         opponent_models=opponent_models,
         max_model_history=max_model_history,
-        probability_switch_model=1,
-        id=2,
+        probability_switch_model=probability_switch_model,
+        switch_method=switch_method,
+        id=1,
     )"""
 
     # Create self model if it is 'None'
@@ -218,7 +230,7 @@ def self_play(*, settings: dict, id: str):
         total_timesteps=total_timesteps, log_interval=4, callback=eval_callback
     )
     self_model.save(os.path.join("./models", id, "end_model"))
-
+    breakpoint()
     train_env.close()
     eval_env.close()
     dummy_env.close()
@@ -228,12 +240,13 @@ def self_play(*, settings: dict, id: str):
 def main():
 
     settings = {
-        "num_training_sets": 2,
+        "num_training_sets": 1,
         "continue_training": True,
         "n_rows": 6,
         "n_cols": 7,
-        "max_model_history": 10,
+        "max_model_history": None,
         "probability_switch_model": 1.0,
+        "switch_method": "ucb",  # "inverse_history_length",
         "net_arch": [1024, 1024],
         "initial_learning_rate": 1e-4,
         "exploration_initial_eps": 1.0,

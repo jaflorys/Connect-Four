@@ -1,7 +1,7 @@
 """Utilities used for training Connect-Four.
 
 This module contains utility functions that are used to train and evaluate
-policies for Connect-Four agents
+policies for Connect-Four agents.
 
 """
 

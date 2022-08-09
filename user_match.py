@@ -67,6 +67,7 @@ def main():
         opponent_models=[model_file_path],
         max_model_history=None,
         probability_switch_model=0,
+        switch_method=None,
         id=1,
     )
     done = False
