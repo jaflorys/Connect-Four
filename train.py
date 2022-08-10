@@ -230,7 +230,7 @@ def self_play(*, settings: dict, id: str):
         total_timesteps=total_timesteps, log_interval=4, callback=eval_callback
     )
     self_model.save(os.path.join("./models", id, "end_model"))
-    breakpoint()
+
     train_env.close()
     eval_env.close()
     dummy_env.close()
@@ -240,7 +240,7 @@ def self_play(*, settings: dict, id: str):
 def main():
 
     settings = {
-        "num_training_sets": 1,
+        "num_training_sets": 2,
         "continue_training": True,
         "n_rows": 6,
         "n_cols": 7,

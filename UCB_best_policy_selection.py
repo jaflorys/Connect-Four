@@ -107,7 +107,7 @@ def compute_ucb(t: int, Q: np.ndarray, N: np.ndarray, c: float):
 
 if __name__ == "__main__":
     settings = {
-        "num_steps": 1000,
+        "num_steps": 2000,
         "c": 2,
     }
     main(settings=settings)
