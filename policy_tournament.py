@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 
-from connect_four_env import ConnectFour
+from connect_four_env import ConnectFourEnv
 from stable_baselines3.dqn.dqn import DQN
 from utils import play_matches
 
@@ -47,9 +47,9 @@ def main(*, settings: dict):
             policy_file_paths[idx_2],
         )
         player = DQN.load(policy_path_1)
-        env = ConnectFour(
-            n_rows=6,
-            n_cols=7,
+        env = ConnectFourEnv(
+            rows=6,
+            cols=7,
             move_first=None,
             opponent_models=[policy_path_2],
             deterministic_opponent=deterministic_opponent,

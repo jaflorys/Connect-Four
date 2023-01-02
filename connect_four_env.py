@@ -1,4 +1,3 @@
-from email.policy import default
 import numpy as np
 import random
 
@@ -20,11 +19,11 @@ from utils import check_connect_four
 from stable_baselines3.dqn.dqn import DQN
 
 
-class ConnectFour(Env):
+class ConnectFourEnv(Env):
     def __init__(
         self,
-        n_rows: int,
-        n_cols: int,
+        rows: int,
+        cols: int,
         move_first: Union[None, bool],
         deterministic_opponent: bool,
         opponent_models: Union[None, DQN],
@@ -33,8 +32,8 @@ class ConnectFour(Env):
         switch_method: Union[None, str],
         id: int,
     ):
-        self.n_rows = n_rows
-        self.n_cols = n_cols
+        self.n_rows = rows
+        self.n_cols = cols
         self.deterministic_opponent = deterministic_opponent
         self.probability_switch_model = probability_switch_model
         self.switch_method = switch_method
@@ -398,7 +397,7 @@ class ConnectFour(Env):
             np.log(np.sum(self.N_t)) * 1.0 / (self.N_t + 1e-9)
         )
         select_idx = np.argmax(ucb)
-        
+
         return self.recent_models[select_idx]
 
     def invert_state(self):

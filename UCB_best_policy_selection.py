@@ -1,12 +1,12 @@
 import gc
 import os
-from typing import DefaultDict
 import numpy as np
+import shutil
 
-
-from connect_four_env import ConnectFour
+from connect_four_env import ConnectFourEnv
 from gym import Env
 from stable_baselines3.dqn.dqn import DQN
+from typing import DefaultDict
 from utils import play_matches
 
 
@@ -56,9 +56,9 @@ def main(*, settings):
             if not opponent_policy_path == policy_path:
                 valid = True
         opponent_policy = [opponent_policy_path]
-        env = ConnectFour(
-            n_rows=6,
-            n_cols=7,
+        env = ConnectFourEnv(
+            rows=6,
+            cols=7,
             move_first=None,
             opponent_models=opponent_policy,
             deterministic_opponent=True,
@@ -98,6 +98,23 @@ def main(*, settings):
     for action in policy_map:
         print(str(action) + ": " + "{:.2%}".format(pct_action[action]))
 
+    # Select all policies with above median performance
+    median_value = np.median(Q_t)
+    best_policy_folder = "ucb_best_policies"
+    if os.path.exists(best_policy_folder):
+        shutil.rmtree(best_policy_folder)
+    os.mkdir(best_policy_folder)
+
+    # Copy the best policies into the folder
+    idx = 0
+    for i, q in enumerate(Q_t):
+        if q >= median_value:
+            policy_dir = best_policy_folder + "////" + str(idx)
+            os.mkdir(policy_dir)
+            copy_file_path = os.path.join(policy_dir, "end_model" + ".zip")
+            shutil.copy(policy_file_paths[i] + ".zip", copy_file_path)
+            idx += 1
+
 
 def compute_ucb(t: int, Q: np.ndarray, N: np.ndarray, c: float):
     ucb = Q + c * np.sqrt(np.log(t) * 1.0 / (N + 1e-9))
@@ -107,7 +124,7 @@ def compute_ucb(t: int, Q: np.ndarray, N: np.ndarray, c: float):
 
 if __name__ == "__main__":
     settings = {
-        "num_steps": 2000,
+        "num_steps": 10000,
         "c": 2,
     }
     main(settings=settings)

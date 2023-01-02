@@ -5,7 +5,7 @@ import learning_schedules
 import numpy as np
 import shutil
 
-from connect_four_env import ConnectFour
+from connect_four_env import ConnectFourEnv
 from gym import Env
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EvalCallback
@@ -35,7 +35,7 @@ def make_env(
     """
 
     def _init():
-        env = ConnectFour(
+        env = ConnectFourEnv(
             n_rows,
             n_cols,
             move_first,
@@ -114,9 +114,9 @@ def self_play(*, settings: dict, id: str):
         "net_arch": net_arch,
     }
 
-    dummy_env = ConnectFour(
-        n_rows=n_rows,
-        n_cols=n_cols,
+    dummy_env = ConnectFourEnv(
+        rows=n_rows,
+        cols=n_cols,
         move_first=None,
         deterministic_opponent=True,
         opponent_models=opponent_models,
@@ -240,21 +240,21 @@ def self_play(*, settings: dict, id: str):
 def main():
 
     settings = {
-        "num_training_sets": 2,
+        "num_training_sets": 3,
         "continue_training": True,
         "n_rows": 6,
         "n_cols": 7,
         "max_model_history": None,
         "probability_switch_model": 1.0,
         "switch_method": "ucb",  # "inverse_history_length",
-        "net_arch": [1024, 1024],
+        "net_arch": [1024, 1024, 1024],
         "initial_learning_rate": 1e-4,
         "exploration_initial_eps": 1.0,
         "exploration_final_eps": 0.05,
         "exploration_fraction": 0.95,
         "num_cpus_train": 2,
         "num_cpus_eval": 1,
-        "total_timesteps": 2.0e6,
+        "total_timesteps": 1.0e6,
     }
 
     continue_training = settings["continue_training"]

@@ -38,6 +38,7 @@ def check_connect_four(state: np.ndarray, player: int):
         row = match_state[i, :]
         values = np.convolve(row, match_pattern)
         if np.sum(values == match_value) > 0:
+            breakpoint()
             return True
 
     # Check cols
@@ -45,11 +46,19 @@ def check_connect_four(state: np.ndarray, player: int):
         col = match_state[:, i]
         values = np.convolve(col, match_pattern)
         if np.sum(values == match_value) > 0:
+            breakpoint()
             return True
 
     # Check diagonals
-    for i in np.arange(-n_rows, n_cols):
-        diag = np.diagonal(match_state)
+    for i in np.arange(-n_rows + 1, n_cols):
+        diag = np.diagonal(match_state, i)
+        values = np.convolve(diag, match_pattern)
+        if np.sum(values == match_value) > 0:
+            return True
+    # Rotate clockwise by 270-degrees to check other diagonal direction
+    match_state_rot = np.rot90(np.rot90(np.rot90(match_state)))
+    for i in np.arange(-n_rows + 1, n_cols):
+        diag = np.diagonal(match_state_rot, i)
         values = np.convolve(diag, match_pattern)
         if np.sum(values == match_value) > 0:
             return True

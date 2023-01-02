@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-from connect_four_env import ConnectFour
+from connect_four_env import ConnectFourEnv
 from gym import Env
 from stable_baselines3 import DQN
 
@@ -59,9 +59,9 @@ def main():
     model_file_path = os.path.join(models_path, prefix, "end_model")
 
     # Instantiate environment
-    env = ConnectFour(
-        n_rows=6,
-        n_cols=7,
+    env = ConnectFourEnv(
+        rows=6,
+        cols=7,
         move_first=move_first,
         deterministic_opponent=True,
         opponent_models=[model_file_path],
