@@ -240,7 +240,7 @@ def self_play(*, settings: dict, id: str):
 def main():
 
     settings = {
-        "num_training_sets": 3,
+        "num_training_sets": 5,
         "continue_training": True,
         "n_rows": 6,
         "n_cols": 7,

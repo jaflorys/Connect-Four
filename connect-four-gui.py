@@ -17,13 +17,8 @@ class BoardSpace(Button):
         self.piece_size = (piece_size, piece_size)
         self.piece_offset = piece_offset
 
-        self._N = 0
-
     def on_press(self):
-        if self._N % 2 == 0:
-            self.parent._update_map(id=self.id)
-            self._N += 1
-            print(self._N)
+        self.parent._update_map(id=self.id)
 
     def _update_state(self, state: int):
         self.canvas.clear()
@@ -50,23 +45,30 @@ class GameBoard(GridLayout):
         self.env = env
         self.space_map = {}
         env.reset()
+        self._initialized = False
 
     def _update_map(self, *, id: int):
-        row, col = id.split("-")
-        row = int(row) - 1
-        col = int(col) - 1
-        _, _, done, info = env.step(col=col)
-        state = env.state
-        self._draw_board(state=state)
-        print(state)
-        if done:
-            done_state = info["done_state"]
-            if done_state == 1:
-                print("YOU WIN!!!")
-            elif done_state == -1:
-                print("YOU LOSE!!!")
-            else:
-                print("TIE GAME!!!")
+        if not self._initialized:
+            self._draw_board(state=np.zeros(env.state.shape))
+            self._initialized = True
+        else:
+            row, col = id.split("-")
+            row = int(row) - 1
+            col = int(col) - 1
+            _, _, done, info = env.step(col=col)
+            state = env.state
+            self._draw_board(state=state)
+            print(state)
+            if done:
+                done_state = info["done_state"]
+                if done_state == 1:
+                    print("YOU WIN!!!")
+                elif done_state == -1:
+                    print("YOU LOSE!!!")
+                else:
+                    print("TIE GAME!!!")
+                self.env.reset()
+                self._initialized = False
 
     def _draw_board(self, state: np.ndarray):
         for row in np.arange(self.rows):

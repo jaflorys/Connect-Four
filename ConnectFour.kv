@@ -1,0 +1,22 @@
+
+<BoardSpace@RelativeLayout>:
+    pos: self.x, self.y
+    size: app.board_space_size, app.board_space_size
+    Button:
+        pos: 0, 0
+        pos_hint: None, None
+        background_color: [0,0,0,0]
+        size: app.board_space_size, app.board_space_size
+        size_hint: None, None
+        on_press: self.on_press()
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 1
+            Ellipse:
+                size: app.piece_size, app.piece_size
+                pos: self.x+app.piece_offset, self.y+app.piece_offset
+
+
+<GameBoard@GridLayout>:
+    
+    
