@@ -1,22 +1,43 @@
 
-<BoardSpace@RelativeLayout>:
-    pos: self.x, self.y
-    size: app.board_space_size, app.board_space_size
-    Button:
-        pos: 0, 0
-        pos_hint: None, None
-        background_color: [0,0,0,0]
-        size: app.board_space_size, app.board_space_size
-        size_hint: None, None
-        on_press: self.on_press()
-        canvas:
-            Color:
-                rgba: 1, 1, 1, 1
-            Ellipse:
-                size: app.piece_size, app.piece_size
-                pos: self.x+app.piece_offset, self.y+app.piece_offset
+#<BoardSpace@Button>:
+    #pos: self.x, self.y
+    #size: app.board_space_size, app.board_space_size
+    # Button:
+    #     pos: 0, 0
+    #     pos_hint: None, None
+    #     background_color: [0,0,0,0]
+    #     size: app.board_space_size, app.board_space_size
+    #     size_hint: None, None
+    #     on_press: self.on_press()
+    #     canvas:
+    #         Color:
+    #             rgba: 1, 1, 1, 1
+    #         Ellipse:
+    #             size: app.piece_size, app.piece_size
+    #             pos: self.x+app.piece_offset, self.y+app.piece_offset
 
 
 <GameBoard@GridLayout>:
-    
+
+<GameScreen@BoxLayout>:
+    orientation: "vertical"
+
+<GameButtons@FloatLayout>:
+    size_hint: 1, 0.2
+    Button:
+        size_hint: 0.25, 0.25
+        pos_hint: {"center_x": .25 , "y": 0.1}
+        text: "Restart game"
+        on_press: self.parent.reset_game()
+    ToggleButton:
+        size_hint: 0.25, 0.25
+        pos_hint: {"center_x": 0.75 , "y": 0.1}
+        text: "First move"
+        state: "down"
+    Label:
+        background_color: [0,0,0,0]
+        size_hint: 0.1, 0.1
+        pos_hint: {"center_x": 0.5, "y": 0.5}
+        text: "Click to start..."
+
     

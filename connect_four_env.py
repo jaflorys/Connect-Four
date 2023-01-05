@@ -205,7 +205,8 @@ class ConnectFourEnv(Env):
         self.available_columns = set(np.arange(self.n_cols))
         if random.random() < self.probability_switch_model:
             self.select_opponent_model()
-        self.move_first = bool(random.randint(0, 1))
+        if self.move_first == None:
+            self.move_first = bool(random.randint(0, 1))
         # Take initial opponent move (only occurs if 'self.move_first==False')
         self.initial_opponent_move()
 
