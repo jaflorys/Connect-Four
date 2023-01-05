@@ -1,17 +1,16 @@
 import numpy as np
 import os
-import time
 
 from connect_four_env import ConnectFourEnv
 from kivy.app import App
-from kivy.graphics import Ellipse
+from kivy.graphics import Color, Ellipse
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.button import Button
+from utils import highlight_match
 
 # from kivy.properties import ListProperty, NumericProperty
-from kivy.graphics import Color
 
 
 class BoardSpace(Button):
@@ -48,11 +47,18 @@ class GameBoard(GridLayout):
         self.cols = cols
         self.env = None
         self.space_map = {}
-        self._initialized = False
         self._move_first = None
+
+        self._initialized = False
+        self._terminal_state = False
 
     def _update_map(self, *, id: int):
         if not self._initialized:
+            if self._terminal_state:
+                # If terminal state, draw connect four positions
+                self._draw_board(state=highlight_match(state=self.env.state))
+                self._terminal_state = False
+                return
             self._initialized = True
             if self.parent.children[0].children[1].state == "down":
                 move_first = True
@@ -83,6 +89,7 @@ class GameBoard(GridLayout):
                     else:
                         self.parent.children[0].children[0].text = "TIE GAME..."
                     self._initialized = False
+                    self._terminal_state = True
 
     def _instantiate_env(self):
         # Instantiate environment
