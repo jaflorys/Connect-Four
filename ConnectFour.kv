@@ -34,6 +34,8 @@
         pos_hint: {"center_x": 0.75 , "y": 0.1}
         text: "First move"
         state: "down"
+        on_press: None
+        on_state: self.text="First move" if self.state=="down" else "Second move"
     Label:
         background_color: [0,0,0,0]
         size_hint: 0.1, 0.1
